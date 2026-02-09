@@ -7,9 +7,9 @@ Webservice for poker tournament based on Django
 ## Tech Stack
 
 - Python 3.8.11
-- Django 4.0.4
+- Django 4.2.28
 - MySQL
-- Django REST Framework
+- Django REST Framework 3.15.2
 - AWS S3
 
 ---
