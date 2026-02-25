@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from shops.models import Shop
+from users.models import User
 from django.core.exceptions import ValidationError
 
 class Tournament(models.Model):
@@ -70,6 +71,9 @@ class Tournament(models.Model):
         
     def __str__(self):
         return f"{self.title} ({self.shop.name})"
+    
+    class Meta:
+        db_table = 'tournaments'
       
 class TournamentImage(models.Model):
 
@@ -87,6 +91,9 @@ class TournamentImage(models.Model):
 
     def __str__(self):
         return f"{self.file_name} - {self.tournament.title}"
+    
+    class Meta:
+        db_table = 'tournament_images'
 
 class TournamentEntry(models.Model):
 
@@ -123,16 +130,37 @@ class TournamentEntry(models.Model):
 
     busted_at = models.DateTimeField(null=True, blank=True)
 
+    approval_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("PENDING", "Pending"),
+            ("APPROVED", "Approved"),
+            ("REJECTED", "Rejected"),
+        ],
+        default="PENDING",
+    )
+
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    approved_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approved_entries"
+    )
+
     class Meta:
         unique_together = ("player", "tournament")
         indexes = [
             models.Index(fields=["tournament"]),
             models.Index(fields=["player"]),
         ]
+        db_table = 'tournament_entries'
 
     def __str__(self):
         return f"{self.player.email} - {self.tournament.title}"
-    
+       
 class BuyInEvent(models.Model):
 
     class TypeChoices(models.TextChoices):
@@ -159,3 +187,4 @@ class BuyInEvent(models.Model):
         indexes = [
             models.Index(fields=["entry", "type"]),
         ]
+        db_table = 'buy_in_events'
