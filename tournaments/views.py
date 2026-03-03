@@ -3,7 +3,6 @@ from rest_framework import generics
 from .models import Tournament
 from .serializers import TournamentListSerializer, TournamentDetailSerializer
 
-
 class TournamentListView(generics.ListAPIView):
     serializer_class = TournamentListSerializer
 

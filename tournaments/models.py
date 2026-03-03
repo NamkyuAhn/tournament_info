@@ -21,6 +21,8 @@ class Tournament(models.Model):
 
     title = models.CharField(max_length=200)
 
+    description = models.TextField(blank=True)
+    
     status = models.CharField(
         max_length=20,
         choices=StatusChoices.choices,
@@ -36,6 +38,8 @@ class Tournament(models.Model):
     start_time = models.DateTimeField()
 
     starting_chips = models.PositiveIntegerField()
+
+    early_chips = models.PositiveIntegerField()
 
     reentry_chips = models.PositiveIntegerField()
 
@@ -83,17 +87,20 @@ class TournamentImage(models.Model):
         related_name="images"
     )
 
-    file_url = models.URLField(max_length=500)
+    image = models.ImageField(
+        upload_to="tournaments/"
+    )
 
-    file_name = models.CharField(max_length=255)
+    is_primary = models.BooleanField(default=False)
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.file_name} - {self.tournament.title}"
-    
+        return f"{self.image.name} - {self.tournament.title}"
+
     class Meta:
-        db_table = 'tournament_images'
+        db_table = "tournament_images"
+        ordering = ["-uploaded_at"]
 
 class TournamentEntry(models.Model):
 
