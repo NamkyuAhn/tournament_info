@@ -33,19 +33,19 @@ class Tournament(models.Model):
 
     max_reentries = models.PositiveIntegerField(default=0)
 
+    max_addons = models.PositiveIntegerField(default=0)
+
     registration_deadline = models.DateTimeField()
 
     start_time = models.DateTimeField()
 
     starting_chips = models.PositiveIntegerField()
 
-    early_chips = models.PositiveIntegerField()
+    early_chips = models.PositiveIntegerField(default=0)
 
     reentry_chips = models.PositiveIntegerField()
 
     addon_chips = models.PositiveIntegerField()
-
-    max_addons = models.PositiveIntegerField(default=0)
 
     blind_structure = models.JSONField()
 
@@ -70,7 +70,7 @@ class Tournament(models.Model):
     def clean(self):
         if self.registration_deadline < self.start_time:
             raise ValidationError(
-                "Registration deadline must be after start time."
+                "Registration deadline must be equal to or after start time."
             )
         
     def __str__(self):
