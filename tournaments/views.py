@@ -3,8 +3,8 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from .models import Tournament
-from .serializers import TournamentListSerializer, TournamentDetailSerializer, TournamentCreateSerializer
-from .services import create_tournament
+from .serializers import TournamentListSerializer, TournamentDetailSerializer, TournamentCreateSerializer, TournamentEditSerializer
+from .services import create_tournament, update_tournament
 
 class TournamentListView(generics.ListAPIView):
     serializer_class = TournamentListSerializer
@@ -52,4 +52,41 @@ class TournamentCreateView(generics.CreateAPIView):
                 "data": response_serializer.data,
             },
             status=201,
+        )
+    
+class TournamentEditView(generics.UpdateAPIView):
+    serializer_class = TournamentEditSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Tournament.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        user = request.user
+
+        if user.role != "SHOP_OWNER":
+            raise PermissionDenied("Only shop owners can edit tournaments.")
+
+        tournament = self.get_object()
+
+        if tournament.shop != user.shop:
+            raise PermissionDenied("You can only edit your own shop tournaments.")
+
+        serializer = self.get_serializer(
+            tournament,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        updated_tournament = update_tournament(
+            tournament,
+            serializer.validated_data
+        )
+
+        response_serializer = TournamentDetailSerializer(updated_tournament)
+
+        return Response(
+            {
+                "message": "Tournament updated successfully.",
+                "data": response_serializer.data
+            }
         )
