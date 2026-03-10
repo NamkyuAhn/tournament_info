@@ -66,3 +66,40 @@ class TournamentCreateSerializer(serializers.ModelSerializer):
             )
 
         return data
+    
+class TournamentEditSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Tournament
+        fields = [
+            "title",
+            "description",
+            "status",
+            "max_entries",
+            "max_reentries",
+            "max_addons",
+            "registration_deadline",
+            "start_time",
+            "starting_chips",
+            "early_chips",
+            "reentry_chips",
+            "addon_chips",
+            "buy_in_amount",
+            "addon_amount",
+            "blind_structure",
+            "prize_structure",
+        ]
+
+    def validate(self, data):
+        start_time = data.get("start_time", self.instance.start_time)
+        registration_deadline = data.get(
+            "registration_deadline",
+            self.instance.registration_deadline
+        )
+
+        if registration_deadline < start_time:
+            raise serializers.ValidationError(
+                "Registration deadline must be equal to or after start time."
+            )
+
+        return data

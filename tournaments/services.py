@@ -21,3 +21,11 @@ def create_tournament(*, shop, validated_data, images):
             )
 
     return tournament
+
+def update_tournament(tournament, validated_data):
+    for attr, value in validated_data.items():
+        setattr(tournament, attr, value)
+
+    tournament.save()
+
+    return tournament
