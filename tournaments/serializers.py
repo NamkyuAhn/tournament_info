@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Tournament, TournamentImage
+from .models import Tournament, TournamentImage, BuyInEvent
 
 class TournamentImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -103,3 +103,8 @@ class TournamentEditSerializer(serializers.ModelSerializer):
             )
 
         return data
+    
+class TournamentBuyInSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(
+        choices=BuyInEvent.TypeChoices.choices
+    )
