@@ -1,10 +1,12 @@
 from django.shortcuts import render
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from .models import Tournament
-from .serializers import TournamentListSerializer, TournamentDetailSerializer, TournamentCreateSerializer, TournamentEditSerializer
-from .services import create_tournament, update_tournament
+from .serializers import TournamentListSerializer, TournamentDetailSerializer, TournamentCreateSerializer, TournamentEditSerializer, TournamentBuyInSerializer
+from .services import create_tournament, update_tournament, TournamentBuyInService
 
 class TournamentListView(generics.ListAPIView):
     serializer_class = TournamentListSerializer
@@ -89,4 +91,31 @@ class TournamentEditView(generics.UpdateAPIView):
                 "message": "Tournament updated successfully.",
                 "data": response_serializer.data
             }
+        )
+
+class TournamentBuyInView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, tournament_id):
+
+        serializer = TournamentBuyInSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        buyin_type = serializer.validated_data["type"]
+
+        tournament = Tournament.objects.get(id=tournament_id)
+
+        entry = TournamentBuyInService.execute(
+            user=request.user,
+            tournament=tournament,
+            buyin_type=buyin_type
+        )
+
+        return Response(
+            {
+                "message": "Buy-in successful.",
+                "entry_id": entry.id
+            },
+            status=status.HTTP_200_OK
         )
