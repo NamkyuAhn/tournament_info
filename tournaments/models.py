@@ -3,6 +3,7 @@ from django.conf import settings
 from shops.models import Shop
 from users.models import User
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 class Tournament(models.Model):
 
@@ -137,6 +138,10 @@ class TournamentEntry(models.Model):
 
     busted_at = models.DateTimeField(null=True, blank=True)
 
+    table_number = models.PositiveIntegerField(null=True, blank=True)
+
+    seat_number = models.PositiveIntegerField(null=True, blank=True)
+
     approval_status = models.CharField(
         max_length=20,
         choices=[
@@ -164,6 +169,17 @@ class TournamentEntry(models.Model):
             models.Index(fields=["player"]),
         ]
         db_table = 'tournament_entries'
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tournament", "table_number", "seat_number"],
+                condition=Q(
+                    table_number__isnull=False,
+                    seat_number__isnull=False
+                ),
+            name="unique_tournament_seat"
+            )
+        ]
 
     def __str__(self):
         return f"{self.player.email} - {self.tournament.title}"
