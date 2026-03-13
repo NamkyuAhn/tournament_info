@@ -4,9 +4,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
-from .models import Tournament
-from .serializers import TournamentListSerializer, TournamentDetailSerializer, TournamentCreateSerializer, TournamentEditSerializer, TournamentBuyInSerializer
-from .services import create_tournament, update_tournament, TournamentBuyInService
+from tournaments.models import Tournament
+from tournaments.serializers.serializers import TournamentListSerializer, TournamentDetailSerializer, TournamentCreateSerializer, TournamentEditSerializer, TournamentBuyInSerializer
+from tournaments.services.services import create_tournament, update_tournament, TournamentBuyInService
 
 class TournamentListView(generics.ListAPIView):
     serializer_class = TournamentListSerializer

@@ -2,7 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import ValidationError
-from .models import Tournament, TournamentImage, TournamentEntry, BuyInEvent    
+from tournaments.models import Tournament, TournamentImage, TournamentEntry, BuyInEvent    
 
 def create_tournament(*, shop, validated_data, images):
     """

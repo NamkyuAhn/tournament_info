@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Tournament, TournamentImage, BuyInEvent
+from tournaments.models import Tournament, TournamentImage, BuyInEvent
 
 class TournamentImageSerializer(serializers.ModelSerializer):
     class Meta:
