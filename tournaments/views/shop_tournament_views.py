@@ -2,81 +2,185 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+
 from django.db.models import Prefetch
-from tournaments.models import Tournament, TournamentEntry
-from tournaments.serializers.shop_tournament_serializers import *
-from tournaments.services.shop_tournament_player_manage_service import TournamentPlayerManageService
 
-class ShopTournamentListView(generics.ListAPIView):
+from tournaments.models import (
+    Tournament,
+    TournamentEntry,
+)
 
-    serializer_class = ShopTournamentListSerializer
-    permission_classes = [permissions.IsAuthenticated]
+from tournaments.serializers.shop_tournament_serializers import (
+    EntryApproveSerializer,
+    ShopTournamentListSerializer,
+    ShopTournamentDetailSerializer,
+)
+
+from tournaments.services.shop_tournament_player_manage_service import (
+    TournamentPlayerManageService,
+)
+
+
+class ShopTournamentListView(
+    generics.ListAPIView
+):
+
+    serializer_class = (
+        ShopTournamentListSerializer
+    )
+
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
 
     def get_queryset(self):
-        user = self.request.user
-        return Tournament.objects.filter(shop=user.shop)
 
-class ShopTournamentDetailView(generics.RetrieveAPIView):
-
-    serializer_class = ShopTournamentDetailSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return Tournament.objects.filter(
-            shop__owner=self.request.user
-        ).prefetch_related(
-            Prefetch(
-                "entries",
-                queryset=TournamentEntry.objects.select_related("player")
+        return (
+            Tournament.objects
+            .filter(
+                shop__owner=self.request.user
+            )
+            .order_by(
+                "-start_time"
             )
         )
 
-class EntryApproveView(generics.GenericAPIView):
 
-    serializer_class = EntryApproveSerializer
+class ShopTournamentDetailView(
+    generics.RetrieveAPIView
+):
 
-    def patch(self, request, entry_id):
+    serializer_class = (
+        ShopTournamentDetailSerializer
+    )
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
 
-        entry = TournamentPlayerManageService.approve_entry(
-            request.user,
-            entry_id,
-            serializer.validated_data["table_number"],
-            serializer.validated_data["seat_number"]
+    def get_queryset(self):
+
+        return (
+            Tournament.objects
+            .filter(
+                shop__owner=self.request.user
+            )
+            .prefetch_related(
+                Prefetch(
+                    "entries",
+                    queryset=(
+                        TournamentEntry.objects
+                        .select_related("player")
+                    ),
+                ),
+            )
         )
 
-        return Response({"message": "Entry approved"})
-    
-class EntryRejectView(APIView):
 
-    permission_classes = [IsAuthenticated]
+class EntryApproveView(
+    generics.GenericAPIView
+):
 
-    def patch(self, request, entry_id):
+    serializer_class = (
+        EntryApproveSerializer
+    )
+
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
+
+    def patch(
+        self,
+        request,
+        entry_id
+    ):
+
+        serializer = self.get_serializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        TournamentPlayerManageService.approve_entry(
+            owner=request.user,
+            entry_id=entry_id,
+            table_number=(
+                serializer.validated_data.get(
+                    "table_number"
+                )
+            ),
+            seat_number=(
+                serializer.validated_data.get(
+                    "seat_number"
+                )
+            ),
+        )
+
+        return Response(
+            {
+                "message": (
+                    "Entry approved"
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class EntryRejectView(
+    APIView
+):
+
+    permission_classes = [
+        IsAuthenticated
+    ]
+
+    def patch(
+        self,
+        request,
+        entry_id
+    ):
 
         TournamentPlayerManageService.reject_entry(
-            request.user,
-            entry_id
+            owner=request.user,
+            entry_id=entry_id,
         )
 
         return Response(
-            {"message": "Entry rejected"},
-            status=status.HTTP_200_OK
-        )   
+            {
+                "message": (
+                    "Entry rejected"
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
 
-class EntryBustView(APIView):
 
-    permission_classes = [IsAuthenticated]
+class EntryBustView(
+    APIView
+):
 
-    def patch(self, request, entry_id):
+    permission_classes = [
+        IsAuthenticated
+    ]
+
+    def patch(
+        self,
+        request,
+        entry_id
+    ):
 
         TournamentPlayerManageService.bust_player(
-            request.user,
-            entry_id
+            owner=request.user,
+            entry_id=entry_id,
         )
 
         return Response(
-            {"message": "Player busted"},
-            status=status.HTTP_200_OK
+            {
+                "message": (
+                    "Player busted"
+                )
+            },
+            status=status.HTTP_200_OK,
         )

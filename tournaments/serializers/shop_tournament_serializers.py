@@ -1,13 +1,31 @@
 from rest_framework import serializers
-from tournaments.models import Tournament, TournamentEntry
+
+from tournaments.models import (
+    Tournament,
+    PokerTournament,
+    TournamentEntry,
+)
+
 
 class EntryApproveSerializer(serializers.Serializer):
-    table_number = serializers.IntegerField(required=False, default=0)
-    seat_number = serializers.IntegerField(required=False, default=0)
+
+    table_number = serializers.IntegerField(
+        required=False,
+        default=0
+    )
+
+    seat_number = serializers.IntegerField(
+        required=False,
+        default=0
+    )
+
 
 class TournamentEntrySerializer(serializers.ModelSerializer):
 
-    player_email = serializers.CharField(source="player.email")
+    player_email = serializers.CharField(
+        source="player.email",
+        read_only=True
+    )
 
     class Meta:
         model = TournamentEntry
@@ -18,9 +36,27 @@ class TournamentEntrySerializer(serializers.ModelSerializer):
             "approval_status",
             "table_number",
             "seat_number",
+            "total_entries_cache",
             "total_reentries_cache",
-            "total_addons_cache"
+            "total_addons_cache",
+            "created_at",
+            "busted_at",
         ]
+
+
+class PokerTournamentShopSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PokerTournament
+        fields = [
+            "max_entries",
+            "max_reentries",
+            "max_addons",
+            "total_entries_cache",
+            "total_reentries_cache",
+            "total_addons_cache",
+        ]
+
 
 class ShopTournamentListSerializer(serializers.ModelSerializer):
 
@@ -29,24 +65,38 @@ class ShopTournamentListSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "game_type",
             "status",
             "start_time",
-            "total_entries_cache",
-            "live_players_cache"
+            "registration_deadline",
+            "entry_fee",
+            "live_players_cache",
         ]
+
 
 class ShopTournamentDetailSerializer(serializers.ModelSerializer):
 
-    entries = TournamentEntrySerializer(many=True)
+    entries = TournamentEntrySerializer(
+        many=True,
+        read_only=True
+    )
+
+    poker_tournament = PokerTournamentShopSerializer(
+        read_only=True
+    )
 
     class Meta:
         model = Tournament
         fields = [
             "id",
             "title",
+            "description",
+            "game_type",
             "status",
             "start_time",
-            "total_entries_cache",
+            "registration_deadline",
+            "entry_fee",
             "live_players_cache",
-            "entries"
+            "poker_tournament",
+            "entries",
         ]
