@@ -23,7 +23,7 @@ from tournaments.services.shop_tournament_player_manage_service import (
 
 class ShopTournamentListView(
     generics.ListAPIView
-):
+    ):
 
     serializer_class = (
         ShopTournamentListSerializer
@@ -48,7 +48,7 @@ class ShopTournamentListView(
 
 class ShopTournamentDetailView(
     generics.RetrieveAPIView
-):
+    ):
 
     serializer_class = (
         ShopTournamentDetailSerializer
@@ -79,7 +79,7 @@ class ShopTournamentDetailView(
 
 class EntryApproveView(
     generics.GenericAPIView
-):
+    ):
 
     serializer_class = (
         EntryApproveSerializer
@@ -130,57 +130,85 @@ class EntryApproveView(
 
 class EntryRejectView(
     APIView
-):
-
-    permission_classes = [
-        IsAuthenticated
-    ]
-
-    def patch(
-        self,
-        request,
-        entry_id
     ):
 
-        TournamentPlayerManageService.reject_entry(
-            owner=request.user,
-            entry_id=entry_id,
-        )
+        permission_classes = [
+            IsAuthenticated
+        ]
 
-        return Response(
-            {
-                "message": (
-                    "Entry rejected"
-                )
-            },
-            status=status.HTTP_200_OK,
-        )
+        def patch(
+            self,
+            request,
+            entry_id
+        ):
+
+            TournamentPlayerManageService.reject_entry(
+                owner=request.user,
+                entry_id=entry_id,
+            )
+
+            return Response(
+                {
+                    "message": (
+                        "Entry rejected"
+                    )
+                },
+                status=status.HTTP_200_OK,
+            )
 
 
 class EntryBustView(
     APIView
-):
-
-    permission_classes = [
-        IsAuthenticated
-    ]
-
-    def patch(
-        self,
-        request,
-        entry_id
     ):
 
-        TournamentPlayerManageService.bust_player(
-            owner=request.user,
-            entry_id=entry_id,
-        )
+        permission_classes = [
+            IsAuthenticated
+        ]
 
-        return Response(
-            {
-                "message": (
-                    "Player busted"
-                )
-            },
-            status=status.HTTP_200_OK,
-        )
+        def patch(
+            self,
+            request,
+            entry_id
+        ):
+
+            TournamentPlayerManageService.bust_player(
+                owner=request.user,
+                entry_id=entry_id,
+            )
+
+            return Response(
+                {
+                    "message": (
+                        "Player busted"
+                    )
+                },
+                status=status.HTTP_200_OK,
+            )
+    
+class TournamentCancelView(
+    APIView
+    ):
+
+        permission_classes = [
+            IsAuthenticated
+        ]
+
+        def post(
+            self,
+            request,
+            tournament_id
+        ):
+
+            TournamentPlayerManageService.cancel_tournament(
+                owner=request.user,
+                tournament_id=tournament_id
+            )
+
+            return Response(
+                {
+                    "detail": (
+                        "Tournament canceled successfully."
+                    )
+                },
+                status=status.HTTP_200_OK
+            )

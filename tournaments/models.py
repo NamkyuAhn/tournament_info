@@ -53,6 +53,11 @@ class Tournament(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    canceled_at = models.DateTimeField(
+    null=True,
+    blank=True
+    )   
+
     max_participants = models.PositiveIntegerField()
 
     live_players_cache = models.PositiveIntegerField(default=0)
@@ -231,6 +236,15 @@ class BuyInEvent(models.Model):
     amount = models.PositiveIntegerField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    refunded = models.BooleanField(
+        default=False
+    )   
+
+    refunded_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
 
     class Meta:
         indexes = [
