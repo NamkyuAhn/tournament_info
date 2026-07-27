@@ -216,6 +216,15 @@ class TournamentPlayerManageService:
 
         player.money += latest_buyin.amount
 
+        latest_buyin.refunded = True
+        latest_buyin.refunded_at = timezone.now()
+
+        latest_buyin.save(
+        update_fields=[
+            "refunded",
+            "refunded_at",
+        ]
+)
         player.save(
             update_fields=[
                 "money"
@@ -322,3 +331,152 @@ class TournamentPlayerManageService:
             )
 
         return entry
+
+    @staticmethod
+    @transaction.atomic
+    def cancel_tournament(owner, tournament_id):
+
+        tournament = (
+            Tournament.objects
+            .select_for_update()
+            .select_related("shop")
+            .get(id=tournament_id)
+        )
+
+        if tournament.shop.owner != owner:
+
+            raise ValidationError(
+                "Not your tournament."
+            )
+
+        if tournament.status == (
+            Tournament.StatusChoices.FINISHED
+        ):
+
+            raise ValidationError(
+                "Finished tournament cannot be canceled."
+            )
+
+        if tournament.status == (
+            Tournament.StatusChoices.CANCELED
+        ):
+
+            raise ValidationError(
+                "Tournament is already canceled."
+            )
+
+        entries = (
+            TournamentEntry.objects
+            .select_for_update()
+            .filter(
+                tournament=tournament
+            )
+        )
+
+        for entry in entries:
+
+            player = (
+                User.objects
+                .select_for_update()
+                .get(
+                    id=entry.player_id
+                )
+            )
+
+            buyin_events = (
+                BuyInEvent.objects
+                .select_for_update()
+                .filter(
+                    entry=entry,
+                    refunded=False
+                )
+            )
+
+            refund_amount = 0
+
+            for buyin_event in buyin_events:
+
+                refund_amount += (
+                    buyin_event.amount
+                )
+
+                buyin_event.refunded = True
+
+                buyin_event.refunded_at = (
+                    timezone.now()
+                )
+
+                buyin_event.save(
+                    update_fields=[
+                        "refunded",
+                        "refunded_at",
+                    ]
+                )
+
+            if refund_amount > 0:
+
+                player.money += refund_amount
+
+                player.save(
+                    update_fields=[
+                        "money"
+                    ]
+                )
+
+            if entry.status != (
+                TournamentEntry.StatusChoices.CANCELED
+            ):
+
+                entry.status = (
+                    TournamentEntry.StatusChoices.CANCELED
+                )
+
+                entry.save(
+                    update_fields=[
+                        "status"
+                    ]
+                )
+
+        tournament.live_players_cache = 0
+
+        tournament.status = (
+            Tournament.StatusChoices.CANCELED
+        )
+
+        tournament.canceled_at = timezone.now()
+
+        tournament.save(
+            update_fields=[
+                "live_players_cache",
+                "status",
+                "canceled_at",
+            ]
+        )
+
+        if tournament.game_type == (
+            Tournament.GameTypeChoices.POKER
+        ):
+
+            poker_tournament = (
+                PokerTournament.objects
+                .select_for_update()
+                .get(
+                    tournament=tournament
+                )
+            )
+
+            poker_tournament.total_entries_cache = 0
+
+            poker_tournament.total_reentries_cache = 0
+
+            poker_tournament.total_addons_cache = 0
+
+            poker_tournament.save(
+                update_fields=[
+                    "total_entries_cache",
+                    "total_reentries_cache",
+                    "total_addons_cache",
+                ]
+            )
+
+        return tournament
