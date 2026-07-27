@@ -205,3 +205,4 @@ class TournamentBuyInSerializer(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=BuyInEvent.TypeChoices.choices
     )
+

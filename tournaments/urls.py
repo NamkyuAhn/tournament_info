@@ -16,6 +16,11 @@ from tournaments.views.shop_tournament_views import (
     EntryBustView,
 )
 
+from tournaments.views.my_tournament_views import (
+    MyTournamentListView,
+    MyTournamentDetailView,
+)
+
 
 urlpatterns = [
     path(
@@ -76,5 +81,17 @@ urlpatterns = [
         "entries/<int:entry_id>/bust/",
         EntryBustView.as_view(),
         name="entry-bust",
+    ),
+
+    path(
+        "my-tournaments/",
+        MyTournamentListView.as_view(),
+        name="my-tournaments",
+    ),
+
+    path(
+        "my-tournaments/<int:tournament_id>/",
+        MyTournamentDetailView.as_view(),
+        name="my-tournament-detail",
     ),
 ]
