@@ -13,10 +13,10 @@ djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
 idna @ file:///home/linux1/recipes/ci/idna_1610986105248/work
 mysqlclient==2.1.0
+pillow==10.4.0
 pycosat==0.6.3
 pycparser @ file:///tmp/build/80754af9/pycparser_1594388511720/work
 PyJWT==2.4.0
-PyMySQL==1.0.2
 pyOpenSSL @ file:///tmp/build/80754af9/pyopenssl_1608057966937/work
 PySocks @ file:///Users/ktietz/Code/oss/ci_pkgs/pysocks_1626781349491/work
 python-dotenv==1.0.1
