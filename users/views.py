@@ -1,9 +1,12 @@
 from django.shortcuts import render
 from django.contrib.auth import authenticate, get_user_model
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+
+import uuid
 
 User = get_user_model()
 
@@ -37,10 +40,10 @@ class SignupView(APIView):
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
-        username = request.data.get("username")
+        name = request.data.get("name")
         role = request.data.get("role")
 
-        if not all([email, password, username, role]):
+        if not all([email, password, name, role]):
             return Response(
                 {"detail": "missing required fields"},
                 status=status.HTTP_400_BAD_REQUEST
@@ -54,7 +57,8 @@ class SignupView(APIView):
 
         user = User.objects.create_user(
             email=email,
-            username=username,
+            username=str(uuid.uuid4()),
+            name=name,
             password=password,
             role=role,
         )
@@ -63,7 +67,7 @@ class SignupView(APIView):
             {
                 "id": user.id,
                 "email": user.email,
-                "username": user.username,
+                "name": user.name,
                 "role": user.role,
             },
             status=status.HTTP_201_CREATED
