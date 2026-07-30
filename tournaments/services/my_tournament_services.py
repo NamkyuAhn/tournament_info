@@ -5,10 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 from tournaments.models import (
     Tournament,
-    PokerTournament,
-    TournamentImage,
     TournamentEntry,
-    BuyInEvent,
 )
 
 
