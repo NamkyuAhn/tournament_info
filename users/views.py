@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 import uuid
 
@@ -72,3 +73,17 @@ class SignupView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
+
+class UserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        return Response({
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role,
+            "money": user.money,
+        })
