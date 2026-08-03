@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.db.models import Prefetch
 
+from tournaments.pagination import TournamentPagination
+
 from tournaments.models import (
     Tournament,
     TournamentEntry,
@@ -25,9 +27,8 @@ class ShopTournamentListView(
     generics.ListAPIView
     ):
 
-    serializer_class = (
-        ShopTournamentListSerializer
-    )
+    serializer_class = ShopTournamentListSerializer
+    pagination_class = TournamentPagination
 
     permission_classes = [
         permissions.IsAuthenticated
