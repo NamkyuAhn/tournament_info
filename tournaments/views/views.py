@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
+import json
+
 from tournaments.models import Tournament
 
 from tournaments.serializers.serializers import (
@@ -30,6 +32,7 @@ class TournamentListView(generics.ListAPIView):
         queryset = (
             Tournament.objects
             .select_related("shop")
+            .prefetch_related("images")
         )
 
         tournament_status = (
@@ -93,8 +96,24 @@ class TournamentCreateView(
         **kwargs
     ):
 
+        data = {}
+
+        for key, value in request.data.items():
+            data[key] = value
+
+
+        if "poker_tournament" in data:
+            data["poker_tournament"] = json.loads(
+                data["poker_tournament"]
+            )
+
+        if "prize_structure" in data:
+            data["prize_structure"] = json.loads(
+                data["prize_structure"]
+            )
+            
         serializer = self.get_serializer(
-            data=request.data
+            data=data
         )
 
         serializer.is_valid(

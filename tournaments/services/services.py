@@ -41,11 +41,12 @@ def create_tournament(*, shop, validated_data, images):
                 **poker_data
             )
 
-        for image in images:
+        for index, image in enumerate(images):
 
             TournamentImage.objects.create(
                 tournament=tournament,
-                image=image
+                image=image,
+                is_primary=(index == 0)
             )
 
     return tournament
