@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
-
+from tournaments.pagination import TournamentPagination
 
 from tournaments.serializers.my_tournament_serializers import (
     MyTournamentSerializer,
@@ -21,7 +21,8 @@ class MyTournamentListView(
 ):
 
     serializer_class = MyTournamentSerializer
-
+    pagination_class = TournamentPagination
+    
     def get_queryset(self):
 
         return (

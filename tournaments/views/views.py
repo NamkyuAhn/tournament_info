@@ -7,6 +7,7 @@ from rest_framework.exceptions import PermissionDenied
 import json
 
 from tournaments.models import Tournament
+from tournaments.pagination import TournamentPagination
 
 from tournaments.serializers.serializers import (
     TournamentListSerializer,
@@ -26,7 +27,8 @@ from tournaments.services.services import (
 class TournamentListView(generics.ListAPIView):
 
     serializer_class = TournamentListSerializer
-
+    pagination_class = TournamentPagination
+    
     def get_queryset(self):
 
         queryset = (
