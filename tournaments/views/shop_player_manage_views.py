@@ -10,13 +10,13 @@ from tournaments.models import (
     TournamentEntry,
 )
 
-from tournaments.serializers.shop_tournament_serializers import (
+from tournaments.serializers.shop_player_manage_serializers import (
     EntryApproveSerializer,
     ShopTournamentListSerializer,
     ShopTournamentDetailSerializer,
 )
 
-from tournaments.services.shop_tournament_player_manage_service import (
+from tournaments.services.shop_player_manage_service import (
     TournamentPlayerManageService,
 )
 

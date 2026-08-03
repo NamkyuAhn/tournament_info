@@ -8,7 +8,7 @@ from tournaments.views.views import (
     TournamentBuyInView,
 )
 
-from tournaments.views.shop_tournament_views import (
+from tournaments.views.shop_player_manage_views import (
     ShopTournamentListView,
     ShopTournamentDetailView,
     EntryApproveView,

@@ -46,6 +46,8 @@ class TournamentListSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    primary_image = serializers.SerializerMethodField()
+
     class Meta:
         model = Tournament
         fields = [
@@ -58,8 +60,19 @@ class TournamentListSerializer(serializers.ModelSerializer):
             "registration_deadline",
             "entry_fee",
             "live_players_cache",
+            "primary_image"
         ]
 
+    def get_primary_image(self, obj):
+
+        image = obj.images.filter(
+            is_primary=True
+        ).first()
+
+        if image:
+            return image.image.url
+
+        return None
 
 class TournamentDetailSerializer(serializers.ModelSerializer):
 
