@@ -27,6 +27,8 @@ class TournamentEntrySerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    buy_in_type = serializers.SerializerMethodField()
+
     class Meta:
         model = TournamentEntry
         fields = [
@@ -41,8 +43,21 @@ class TournamentEntrySerializer(serializers.ModelSerializer):
             "total_addons_cache",
             "created_at",
             "busted_at",
+            "buy_in_type",
         ]
 
+    def get_buy_in_type(self, obj):
+
+        latest_event = (
+            obj.buyin_events
+            .order_by("-created_at")
+            .first()
+        )
+
+        if latest_event:
+            return latest_event.type
+
+        return None
 
 class PokerTournamentShopSerializer(serializers.ModelSerializer):
 
@@ -76,11 +91,6 @@ class ShopTournamentListSerializer(serializers.ModelSerializer):
 
 class ShopTournamentDetailSerializer(serializers.ModelSerializer):
 
-    entries = TournamentEntrySerializer(
-        many=True,
-        read_only=True
-    )
-
     poker_tournament = PokerTournamentShopSerializer(
         read_only=True
     )
@@ -98,5 +108,4 @@ class ShopTournamentDetailSerializer(serializers.ModelSerializer):
             "entry_fee",
             "live_players_cache",
             "poker_tournament",
-            "entries",
         ]
