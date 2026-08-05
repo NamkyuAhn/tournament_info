@@ -15,6 +15,7 @@ from tournaments.views.shop_player_manage_views import (
     EntryRejectView,
     EntryBustView,
     TournamentCancelView,
+    ShopTournamentEntryListView,
 )
 
 from tournaments.views.my_tournament_views import (
@@ -100,5 +101,11 @@ urlpatterns = [
         "<int:tournament_id>/cancel/",
         TournamentCancelView.as_view(),
         name="tournament-cancel",
+    ),
+
+    path(
+        "my-shop-tournaments/<int:pk>/entries/",
+        ShopTournamentEntryListView.as_view(),
+        name="shop-tournament-entries",
     ),
 ]

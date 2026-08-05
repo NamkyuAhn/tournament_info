@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.db.models import Prefetch
 
-from tournaments.pagination import TournamentPagination
+from tournaments.pagination import TournamentPagination, EntryPagination
 
 from tournaments.models import (
     Tournament,
@@ -16,6 +16,7 @@ from tournaments.serializers.shop_player_manage_serializers import (
     EntryApproveSerializer,
     ShopTournamentListSerializer,
     ShopTournamentDetailSerializer,
+    TournamentEntrySerializer,
 )
 
 from tournaments.services.shop_player_manage_service import (
@@ -72,6 +73,7 @@ class ShopTournamentDetailView(
                     queryset=(
                         TournamentEntry.objects
                         .select_related("player")
+                        .prefetch_related("buyin_events")
                     ),
                 ),
             )
@@ -213,3 +215,25 @@ class TournamentCancelView(
                 },
                 status=status.HTTP_200_OK
             )
+
+class ShopTournamentEntryListView(generics.ListAPIView):
+
+    serializer_class = TournamentEntrySerializer
+    pagination_class = EntryPagination
+
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
+
+    def get_queryset(self):
+
+        return (
+            TournamentEntry.objects
+            .filter(
+                tournament_id=self.kwargs["pk"],
+                tournament__shop__owner=self.request.user
+            )
+            .select_related("player")
+            .prefetch_related("buyin_events")
+            .order_by("-created_at")
+        )
