@@ -43,7 +43,7 @@ class ShopTournamentListView(
                 shop__owner=self.request.user
             )
             .order_by(
-                "-start_time"
+                "-created_at"
             )
         )
 
