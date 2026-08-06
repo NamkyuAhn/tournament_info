@@ -99,6 +99,7 @@ class TournamentDetailSerializer(serializers.ModelSerializer):
             "description",
             "game_type",
             "status",
+            "max_participants",
             "registration_deadline",
             "start_time",
             "prize_structure",
