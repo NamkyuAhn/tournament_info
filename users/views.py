@@ -80,10 +80,17 @@ class UserInfoView(APIView):
     def get(self, request):
         user = request.user
 
+        shop_name = ""
+
+        if user.role == "SHOP_OWNER":
+            if hasattr(user, "shop"):
+                shop_name = user.shop.name
+
         return Response({
             "id": user.id,
             "email": user.email,
             "name": user.name,
             "role": user.role,
             "money": user.money,
+            "shop_name": shop_name,
         })
