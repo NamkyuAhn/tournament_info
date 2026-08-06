@@ -52,7 +52,11 @@ def create_tournament(*, shop, validated_data, images):
     return tournament
 
 
-def update_tournament(tournament, validated_data):
+def update_tournament(
+    tournament,
+    validated_data,
+    images=None,
+    ):
 
     poker_data = validated_data.pop(
         "poker_tournament",
@@ -70,6 +74,21 @@ def update_tournament(tournament, validated_data):
             )
 
         tournament.save()
+
+        if images:
+
+            TournamentImage.objects.filter(
+                tournament=tournament
+            ).delete()
+
+            for index, image in enumerate(images):
+
+                TournamentImage.objects.create(
+                    tournament=tournament,
+                    image=image,
+                    is_primary=(index == 0)
+                )
+
 
         if poker_data is not None:
 
@@ -94,6 +113,7 @@ def update_tournament(tournament, validated_data):
             poker_tournament.save()
 
     return tournament
+
 
 
 class TournamentBuyInService:

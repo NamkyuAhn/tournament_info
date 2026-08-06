@@ -203,6 +203,7 @@ class TournamentEditView(
         updated_tournament = update_tournament(
             tournament,
             serializer.validated_data,
+            images=request.FILES.getlist("images"),
         )
 
         response_serializer = (
