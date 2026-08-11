@@ -9,9 +9,109 @@ from tournaments.models import (
     PokerTournament,
     TournamentEntry,
     BuyInEvent,
+    TournamentImage,
 )
 
 User = get_user_model()
+
+def create_tournament(*, shop, validated_data, images):
+
+    poker_data = validated_data.pop(
+        "poker_tournament",
+        None
+    )
+
+    with transaction.atomic():
+
+        tournament = Tournament.objects.create(
+            shop=shop,
+            **validated_data
+        )
+
+        if tournament.game_type == Tournament.GameTypeChoices.POKER:
+
+            if poker_data is None:
+                raise ValidationError(
+                    "Poker tournament data is required."
+                )
+
+            PokerTournament.objects.create(
+                tournament=tournament,
+                **poker_data
+            )
+
+        for index, image in enumerate(images):
+
+            TournamentImage.objects.create(
+                tournament=tournament,
+                image=image,
+                is_primary=(index == 0)
+            )
+
+    return tournament
+
+
+def update_tournament(
+    tournament,
+    validated_data,
+    images=None,
+    ):
+
+    poker_data = validated_data.pop(
+        "poker_tournament",
+        None
+    )
+
+    with transaction.atomic():
+
+        for attr, value in validated_data.items():
+
+            setattr(
+                tournament,
+                attr,
+                value
+            )
+
+        tournament.save()
+
+        if images:
+
+            TournamentImage.objects.filter(
+                tournament=tournament
+            ).delete()
+
+            for index, image in enumerate(images):
+
+                TournamentImage.objects.create(
+                    tournament=tournament,
+                    image=image,
+                    is_primary=(index == 0)
+                )
+
+
+        if poker_data is not None:
+
+            if tournament.game_type != (
+                Tournament.GameTypeChoices.POKER
+            ):
+
+                raise ValidationError(
+                    "Poker tournament data is only available for poker tournaments."
+                )
+
+            poker_tournament = tournament.poker_tournament
+
+            for attr, value in poker_data.items():
+
+                setattr(
+                    poker_tournament,
+                    attr,
+                    value
+                )
+
+            poker_tournament.save()
+
+    return tournament
 
 class TournamentPlayerManageService:
 

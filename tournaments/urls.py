@@ -3,12 +3,11 @@ from django.urls import path
 from tournaments.views.views import (
     TournamentListView,
     TournamentDetailView,
-    TournamentCreateView,
-    TournamentEditView,
-    TournamentBuyInView,
 )
 
-from tournaments.views.shop_player_manage_views import (
+from tournaments.views.shop_views import (
+    TournamentCreateView,
+    TournamentEditView,
     ShopTournamentListView,
     ShopTournamentDetailView,
     EntryApproveView,
@@ -16,11 +15,13 @@ from tournaments.views.shop_player_manage_views import (
     EntryBustView,
     TournamentCancelView,
     ShopTournamentEntryListView,
+    TournamentStatusUpdateView,
 )
 
-from tournaments.views.my_tournament_views import (
+from tournaments.views.user_views import (
     MyTournamentListView,
     MyTournamentDetailView,
+    TournamentBuyInView,
 )
 
 
@@ -107,5 +108,11 @@ urlpatterns = [
         "my-shop-tournaments/<int:pk>/entries/",
         ShopTournamentEntryListView.as_view(),
         name="shop-tournament-entries",
+    ),
+
+    path(
+        "<int:tournament_id>/status/",
+        TournamentStatusUpdateView.as_view(),
+        name="tournament-status-update",
     ),
 ]
