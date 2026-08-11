@@ -3,7 +3,6 @@ from rest_framework import serializers
 from tournaments.models import (
     Tournament,
     PokerTournament,
-    TournamentImage,
     TournamentEntry,
     BuyInEvent
 )
@@ -150,3 +149,9 @@ class MyTournamentDetailSerializer(
         return MyPokerTournamentSerializer(
             obj.poker_tournament
         ).data
+
+class TournamentBuyInSerializer(serializers.Serializer):
+
+    type = serializers.ChoiceField(
+        choices=BuyInEvent.TypeChoices.choices
+    )
