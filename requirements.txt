@@ -1,35 +1,9 @@
-asgiref==3.8.1
-backports.zoneinfo==0.2.1
-boto3==1.37.38
-botocore==1.37.38
-brotlipy==0.7.0
-certifi==2020.12.5
-cffi @ file:///Users/ktietz/Code/oss/ci_pkgs/cffi_1624487777258/work
-chardet @ file:///Users/ktietz/Code/oss/ci_pkgs/chardet_1626783467640/work
-conda==4.10.1
-conda-package-handling @ file:///Users/ktietz/Code/oss/ci_pkgs/conda-package-handling_1626784934972/work
-cryptography @ file:///Users/ktietz/Code/oss/ci_pkgs/cryptography_1624488650114/work
-django==4.2.28
-django-cors-headers==3.11.0
-django-storages==1.14.6
+Django==4.2.28
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
-idna @ file:///home/linux1/recipes/ci/idna_1610986105248/work
-jmespath==1.0.1
+django-cors-headers==3.11.0
+django-storages==1.14.6
+boto3==1.37.38
 mysqlclient==2.1.0
-pillow==10.4.0
-pycosat==0.6.3
-pycparser @ file:///tmp/build/80754af9/pycparser_1594388511720/work
-PyJWT==2.4.0
-pyOpenSSL @ file:///tmp/build/80754af9/pyopenssl_1608057966937/work
-PySocks @ file:///Users/ktietz/Code/oss/ci_pkgs/pysocks_1626781349491/work
-python-dateutil==2.9.0.post0
+Pillow==10.4.0
 python-dotenv==1.0.1
-requests @ file:///tmp/build/80754af9/requests_1608241421344/work
-ruamel-yaml-conda @ file:///Users/ktietz/Code/oss/ci_pkgs/ruamel_yaml_1626786937887/work
-s3transfer==0.11.5
-six @ file:///tmp/build/80754af9/six_1623709665295/work
-sqlparse==0.4.2
-tqdm @ file:///tmp/build/80754af9/tqdm_1625563689033/work
-typing-extensions==4.13.2
-urllib3 @ file:///tmp/build/80754af9/urllib3_1625084269274/work
