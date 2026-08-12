@@ -64,7 +64,6 @@ class TournamentBuyInView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
 class MyTournamentListView(
     generics.ListAPIView
 ):
@@ -112,3 +111,4 @@ class MyTournamentDetailView(
         return Response(
             serializer.data
         )
+
