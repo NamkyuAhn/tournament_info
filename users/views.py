@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, get_user_model
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 
@@ -94,3 +94,55 @@ class UserInfoView(APIView):
             "money": user.money,
             "shop_name": shop_name,
         })
+
+class MoneyChargeView(APIView):
+
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
+
+    def post(self, request):
+
+        amount = request.data.get("amount")
+
+        if amount is None:
+            return Response(
+                {
+                    "detail": "amount is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            amount = int(amount)
+        except (TypeError, ValueError):
+            return Response(
+                {
+                    "detail": "amount must be an integer."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if amount <= 0:
+            return Response(
+                {
+                    "detail": "amount must be greater than 0."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+
+        user.money += amount
+        user.save(
+            update_fields=["money"]
+        )
+
+        return Response(
+            {
+                "message": "Money charged successfully.",
+                "amount": amount,
+                "money": user.money,
+            },
+            status=status.HTTP_200_OK
+        )
