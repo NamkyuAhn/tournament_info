@@ -144,9 +144,38 @@ class TournamentEditView(
                 "You can only edit your own shop tournaments."
             )
 
+
+        data = request.data.dict()
+
+
+        if "poker_tournament" in data:
+
+            data["poker_tournament"] = json.loads(
+                data["poker_tournament"]
+            )
+
+        if "prize_structure" in data:
+            data["prize_structure"] = json.loads(
+                data["prize_structure"]
+            )
+
+        existing_image_ids = None
+
+        if "existing_image_ids" in data:
+
+            existing_image_ids = json.loads(
+                data["existing_image_ids"]
+            )
+
+            data.pop(
+                "existing_image_ids",
+                None
+            )
+
+
         serializer = self.get_serializer(
             tournament,
-            data=request.data,
+            data=data,
             partial=True,
         )
 
@@ -154,10 +183,14 @@ class TournamentEditView(
             raise_exception=True
         )
 
+
         updated_tournament = update_tournament(
             tournament,
             serializer.validated_data,
-            images=request.FILES.getlist("images"),
+            images=request.FILES.getlist(
+                "images"
+            ),
+            existing_image_ids=existing_image_ids,
         )
 
         response_serializer = (

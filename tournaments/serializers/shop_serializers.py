@@ -92,7 +92,7 @@ class TournamentEditSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-
+        print("TOURNAMENT VALIDATE:", data)
         start_time = data.get(
             "start_time",
             self.instance.start_time
