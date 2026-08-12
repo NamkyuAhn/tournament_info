@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-
+import json
 from rest_framework.exceptions import ValidationError
 
 from tournaments.models import (
@@ -55,7 +55,8 @@ def update_tournament(
     tournament,
     validated_data,
     images=None,
-    ):
+    existing_image_ids=None,
+):
 
     poker_data = validated_data.pop(
         "poker_tournament",
@@ -74,19 +75,59 @@ def update_tournament(
 
         tournament.save()
 
-        if images:
+        if existing_image_ids is not None:
+
+            existing_image_ids = [
+                int(image_id)
+                for image_id in existing_image_ids
+            ]
+
+            existing_images = (
+                TournamentImage.objects.filter(
+                    tournament=tournament,
+                    id__in=existing_image_ids
+                )
+            )
 
             TournamentImage.objects.filter(
                 tournament=tournament
+            ).exclude(
+                id__in=existing_image_ids
             ).delete()
 
-            for index, image in enumerate(images):
 
-                TournamentImage.objects.create(
-                    tournament=tournament,
-                    image=image,
-                    is_primary=(index == 0)
-                )
+            if images:
+
+                has_primary = existing_images.filter(
+                    is_primary=True
+                ).exists()
+
+
+                for image in images:
+
+                    TournamentImage.objects.create(
+                        tournament=tournament,
+                        image=image,
+                        is_primary=not has_primary
+                    )
+
+                    has_primary = True
+
+            if not TournamentImage.objects.filter(
+                tournament=tournament,
+                is_primary=True
+            ).exists():
+
+                first_image = TournamentImage.objects.filter(
+                    tournament=tournament
+                ).order_by("id").first()
+
+                if first_image:
+
+                    first_image.is_primary = True
+                    first_image.save(
+                        update_fields=["is_primary"]
+                    )
 
 
         if poker_data is not None:
@@ -99,7 +140,9 @@ def update_tournament(
                     "Poker tournament data is only available for poker tournaments."
                 )
 
-            poker_tournament = tournament.poker_tournament
+            poker_tournament = (
+                tournament.poker_tournament
+            )
 
             for attr, value in poker_data.items():
 
@@ -110,6 +153,7 @@ def update_tournament(
                 )
 
             poker_tournament.save()
+
 
     return tournament
 
