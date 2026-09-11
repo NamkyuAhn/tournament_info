@@ -1,20 +1,11 @@
 from rest_framework import serializers
 
-from tournaments.models import (
-    Tournament,
-    PokerTournament,
-    TournamentEntry,
-    BuyInEvent
-)
+from tournaments.models import Tournament, PokerTournament, TournamentEntry, BuyInEvent
 
-class MyTournamentSerializer(
-    serializers.ModelSerializer
-):
 
-    shop_name = serializers.CharField(
-        source="shop.name",
-        read_only=True
-    )
+class MyTournamentSerializer(serializers.ModelSerializer):
+
+    shop_name = serializers.CharField(source="shop.name", read_only=True)
 
     class Meta:
         model = Tournament
@@ -29,9 +20,7 @@ class MyTournamentSerializer(
         ]
 
 
-class MyTournamentEntrySerializer(
-    serializers.ModelSerializer
-):
+class MyTournamentEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TournamentEntry
@@ -50,9 +39,7 @@ class MyTournamentEntrySerializer(
         ]
 
 
-class MyBuyInEventSerializer(
-    serializers.ModelSerializer
-):
+class MyBuyInEventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BuyInEvent
@@ -64,9 +51,7 @@ class MyBuyInEventSerializer(
         ]
 
 
-class MyPokerTournamentSerializer(
-    serializers.ModelSerializer
-):
+class MyPokerTournamentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PokerTournament
@@ -84,14 +69,9 @@ class MyPokerTournamentSerializer(
         ]
 
 
-class MyTournamentDetailSerializer(
-    serializers.ModelSerializer
-):
+class MyTournamentDetailSerializer(serializers.ModelSerializer):
 
-    shop_name = serializers.CharField(
-        source="shop.name",
-        read_only=True
-    )
+    shop_name = serializers.CharField(source="shop.name", read_only=True)
 
     entry = serializers.SerializerMethodField()
 
@@ -116,42 +96,28 @@ class MyTournamentDetailSerializer(
 
     def get_entry(self, obj):
 
-        entry = self.context.get(
-            "entry"
-        )
+        entry = self.context.get("entry")
 
         if not entry:
 
             return None
 
         return {
-            **MyTournamentEntrySerializer(
-                entry
-            ).data,
-
+            **MyTournamentEntrySerializer(entry).data,
             "buyin_events": (
-                MyBuyInEventSerializer(
-                    entry.buyin_events.all(),
-                    many=True
-                ).data
+                MyBuyInEventSerializer(entry.buyin_events.all(), many=True).data
             ),
         }
 
     def get_poker_tournament(self, obj):
 
-        if (
-            obj.game_type
-            != Tournament.GameTypeChoices.POKER
-        ):
+        if obj.game_type != Tournament.GameTypeChoices.POKER:
 
             return None
 
-        return MyPokerTournamentSerializer(
-            obj.poker_tournament
-        ).data
+        return MyPokerTournamentSerializer(obj.poker_tournament).data
+
 
 class TournamentBuyInSerializer(serializers.Serializer):
 
-    type = serializers.ChoiceField(
-        choices=BuyInEvent.TypeChoices.choices
-    )
+    type = serializers.ChoiceField(choices=BuyInEvent.TypeChoices.choices)

@@ -9,95 +9,61 @@ from tournaments.models import Tournament
 from tournaments.serializers.user_serializers import (
     MyTournamentSerializer,
     MyTournamentDetailSerializer,
-    TournamentBuyInSerializer
+    TournamentBuyInSerializer,
 )
 
 from tournaments.services.user_services import (
     TournamentBuyInService,
-    TournamentPlayerManageService
+    TournamentPlayerManageService,
 )
+
 
 class TournamentBuyInView(APIView):
 
-    permission_classes = [
-        IsAuthenticated
-    ]
+    permission_classes = [IsAuthenticated]
 
-    def post(
-        self,
-        request,
-        tournament_id
-    ):
+    def post(self, request, tournament_id):
 
-        serializer = (
-            TournamentBuyInSerializer(
-                data=request.data
-            )
-        )
+        serializer = TournamentBuyInSerializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
-        tournament = (
-            Tournament.objects
-            .get(id=tournament_id)
-        )
+        tournament = Tournament.objects.get(id=tournament_id)
 
-        entry = (
-            TournamentBuyInService.execute(
-                user=request.user,
-                tournament=tournament,
-                buyin_type=serializer.validated_data[
-                    "type"
-                ],
-            )
+        entry = TournamentBuyInService.execute(
+            user=request.user,
+            tournament=tournament,
+            buyin_type=serializer.validated_data["type"],
         )
 
         return Response(
             {
-                "message": (
-                    "Buy-in successful."
-                ),
+                "message": ("Buy-in successful."),
                 "entry_id": entry.id,
             },
             status=status.HTTP_200_OK,
         )
 
-class MyTournamentListView(
-    generics.ListAPIView
-):
+
+class MyTournamentListView(generics.ListAPIView):
 
     serializer_class = MyTournamentSerializer
     pagination_class = TournamentPagination
-    
+
     def get_queryset(self):
 
-        return (
-            TournamentPlayerManageService
-            .get_my_tournaments(
-                self.request.user
-            )
-        )
+        return TournamentPlayerManageService.get_my_tournaments(self.request.user)
 
-class MyTournamentDetailView(
-    generics.RetrieveAPIView
-):
 
-    serializer_class = (
-        MyTournamentDetailSerializer
-    )
+class MyTournamentDetailView(generics.RetrieveAPIView):
+
+    serializer_class = MyTournamentDetailSerializer
 
     def get(self, request, *args, **kwargs):
 
-        entry = (
-            TournamentPlayerManageService
-            .get_my_tournament_detail(
-                user=request.user,
-                tournament_id=kwargs[
-                    "tournament_id"
-                ],
-            )
+        entry = TournamentPlayerManageService.get_my_tournament_detail(
+            user=request.user,
+            tournament_id=kwargs["tournament_id"],
         )
 
         serializer = self.get_serializer(
@@ -105,10 +71,7 @@ class MyTournamentDetailView(
             context={
                 "request": request,
                 "entry": entry,
-            }
+            },
         )
 
-        return Response(
-            serializer.data
-        )
-
+        return Response(serializer.data)

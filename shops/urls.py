@@ -12,7 +12,6 @@ urlpatterns = [
         ShopCreateView.as_view(),
         name="shop-create",
     ),
-
     path(
         "me/",
         ShopUpdateView.as_view(),

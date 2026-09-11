@@ -18,6 +18,7 @@ class TournamentImageSerializer(serializers.ModelSerializer):
             "uploaded_at",
         ]
 
+
 class PokerTournamentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -35,12 +36,10 @@ class PokerTournamentSerializer(serializers.ModelSerializer):
             "addon_fee",
         ]
 
+
 class TournamentListSerializer(serializers.ModelSerializer):
 
-    shop_name = serializers.CharField(
-        source="shop.name",
-        read_only=True
-    )
+    shop_name = serializers.CharField(source="shop.name", read_only=True)
 
     primary_image = serializers.SerializerMethodField()
 
@@ -56,35 +55,26 @@ class TournamentListSerializer(serializers.ModelSerializer):
             "registration_deadline",
             "entry_fee",
             "live_players_cache",
-            "primary_image"
+            "primary_image",
         ]
 
     def get_primary_image(self, obj):
 
-        image = obj.images.filter(
-            is_primary=True
-        ).first()
+        image = obj.images.filter(is_primary=True).first()
 
         if image:
             return image.image.url
 
         return None
 
+
 class TournamentDetailSerializer(serializers.ModelSerializer):
 
-    shop_name = serializers.CharField(
-        source="shop.name",
-        read_only=True
-    )
+    shop_name = serializers.CharField(source="shop.name", read_only=True)
 
-    images = TournamentImageSerializer(
-        many=True,
-        read_only=True
-    )
+    images = TournamentImageSerializer(many=True, read_only=True)
 
-    poker_tournament = PokerTournamentSerializer(
-        read_only=True
-    )
+    poker_tournament = PokerTournamentSerializer(read_only=True)
 
     class Meta:
         model = Tournament
@@ -106,5 +96,3 @@ class TournamentDetailSerializer(serializers.ModelSerializer):
             "images",
             "poker_tournament",
         ]
-
-
