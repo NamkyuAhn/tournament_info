@@ -5,40 +5,33 @@ from users.models import User
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
+
 class Tournament(models.Model):
 
     class StatusChoices(models.TextChoices):
-        WAITING = "WAITING", "Waiting"               
-        RUNNING = "RUNNING", "Running"               # Entry Available
-        REGI_CLOSED = "REGI_CLOSED", "Regi Closed"   # Entry Not Available
-        FINISHED = "FINISHED", "Finished"            
-        CANCELED = "CANCELED", "Canceled"            
+        WAITING = "WAITING", "Waiting"
+        RUNNING = "RUNNING", "Running"  # Entry Available
+        REGI_CLOSED = "REGI_CLOSED", "Regi Closed"  # Entry Not Available
+        FINISHED = "FINISHED", "Finished"
+        CANCELED = "CANCELED", "Canceled"
 
     class GameTypeChoices(models.TextChoices):
         POKER = "POKER", "Poker"
         CHESS = "CHESS", "Chess"
         POKEMON_TCG = "POKEMON_TCG", "Pokémon TCG"
 
-    shop = models.ForeignKey(
-        Shop,
-        on_delete=models.CASCADE,
-        related_name="tournaments"
-    )
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name="tournaments")
 
     title = models.CharField(max_length=200)
 
     description = models.TextField(blank=True)
 
     game_type = models.CharField(
-        max_length=30,
-        choices=GameTypeChoices.choices,
-        default=GameTypeChoices.POKER
+        max_length=30, choices=GameTypeChoices.choices, default=GameTypeChoices.POKER
     )
 
     status = models.CharField(
-        max_length=20,
-        choices=StatusChoices.choices,
-        default=StatusChoices.WAITING
+        max_length=20, choices=StatusChoices.choices, default=StatusChoices.WAITING
     )
 
     registration_deadline = models.DateTimeField()
@@ -53,10 +46,7 @@ class Tournament(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
-    canceled_at = models.DateTimeField(
-    null=True,
-    blank=True
-    )   
+    canceled_at = models.DateTimeField(null=True, blank=True)
 
     max_participants = models.PositiveIntegerField()
 
@@ -67,24 +57,21 @@ class Tournament(models.Model):
             raise ValidationError(
                 "Registration deadline must be equal to or after start time."
             )
-        
+
     def __str__(self):
         return f"{self.title} ({self.shop.name})"
-    
+
     class Meta:
-        db_table = 'tournaments'
-      
+        db_table = "tournaments"
+
+
 class TournamentImage(models.Model):
 
     tournament = models.ForeignKey(
-        Tournament,
-        on_delete=models.CASCADE,
-        related_name="images"
+        Tournament, on_delete=models.CASCADE, related_name="images"
     )
 
-    image = models.ImageField(
-        upload_to="tournaments/"
-    )
+    image = models.ImageField(upload_to="tournaments/")
 
     is_primary = models.BooleanField(default=False)
 
@@ -97,12 +84,11 @@ class TournamentImage(models.Model):
         db_table = "tournament_images"
         ordering = ["-uploaded_at"]
 
+
 class PokerTournament(models.Model):
 
     tournament = models.OneToOneField(
-        Tournament,
-        on_delete=models.CASCADE,
-        related_name="poker_tournament"
+        Tournament, on_delete=models.CASCADE, related_name="poker_tournament"
     )
 
     max_entries = models.PositiveIntegerField()
@@ -132,7 +118,8 @@ class PokerTournament(models.Model):
     total_addons_cache = models.PositiveIntegerField(default=0)
 
     class Meta:
-        db_table = 'poker_tournaments'
+        db_table = "poker_tournaments"
+
 
 class TournamentEntry(models.Model):
 
@@ -144,24 +131,20 @@ class TournamentEntry(models.Model):
     player = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="tournament_entries"
+        related_name="tournament_entries",
     )
 
     tournament = models.ForeignKey(
-        Tournament,
-        on_delete=models.CASCADE,
-        related_name="entries"
+        Tournament, on_delete=models.CASCADE, related_name="entries"
     )
 
     status = models.CharField(
-        max_length=20,
-        choices=StatusChoices.choices,
-        default=StatusChoices.REGISTERED
+        max_length=20, choices=StatusChoices.choices, default=StatusChoices.REGISTERED
     )
 
-    total_entries_cache = models.PositiveIntegerField(default=1) 
+    total_entries_cache = models.PositiveIntegerField(default=1)
 
-    total_reentries_cache = models.PositiveIntegerField(default=0) 
+    total_reentries_cache = models.PositiveIntegerField(default=0)
 
     total_addons_cache = models.PositiveIntegerField(default=0)
 
@@ -190,7 +173,7 @@ class TournamentEntry(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="approved_entries"
+        related_name="approved_entries",
     )
 
     class Meta:
@@ -199,55 +182,43 @@ class TournamentEntry(models.Model):
             models.Index(fields=["tournament"]),
             models.Index(fields=["player"]),
         ]
-        db_table = 'tournament_entries'
+        db_table = "tournament_entries"
 
         constraints = [
             models.UniqueConstraint(
                 fields=["tournament", "table_number", "seat_number"],
-                condition=Q(
-                    table_number__isnull=False,
-                    seat_number__isnull=False
-                ),
-            name="unique_tournament_seat"
+                condition=Q(table_number__isnull=False, seat_number__isnull=False),
+                name="unique_tournament_seat",
             )
         ]
 
     def __str__(self):
         return f"{self.player.email} - {self.tournament.title}"
-       
+
+
 class BuyInEvent(models.Model):
 
     class TypeChoices(models.TextChoices):
         ENTRY = "ENTRY", "Entry"
         REENTRY = "REENTRY", "Reentry"
-        ADDON = "ADDON", "Addon"   
+        ADDON = "ADDON", "Addon"
 
     entry = models.ForeignKey(
-        TournamentEntry,
-        on_delete=models.CASCADE,
-        related_name="buyin_events"
+        TournamentEntry, on_delete=models.CASCADE, related_name="buyin_events"
     )
 
-    type = models.CharField(
-        max_length=10,
-        choices=TypeChoices.choices
-    )
+    type = models.CharField(max_length=10, choices=TypeChoices.choices)
 
     amount = models.PositiveIntegerField()
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-    refunded = models.BooleanField(
-        default=False
-    )   
+    refunded = models.BooleanField(default=False)
 
-    refunded_at = models.DateTimeField(
-        null=True,
-        blank=True
-    )
+    refunded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [
             models.Index(fields=["entry", "type"]),
         ]
-        db_table = 'buy_in_events'
+        db_table = "buy_in_events"

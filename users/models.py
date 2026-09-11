@@ -1,17 +1,14 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
 class User(AbstractUser):
     ROLE_CHOICES = (
-        ('PLAYER', 'Player'),
-        ('SHOP_OWNER', 'Shop Owner'),
+        ("PLAYER", "Player"),
+        ("SHOP_OWNER", "Shop Owner"),
     )
 
-    name = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True
-        )
+    name = models.CharField(max_length=100, blank=True, null=True)
 
     email = models.EmailField(unique=True)
 
@@ -19,12 +16,12 @@ class User(AbstractUser):
 
     money = models.IntegerField(default=0)
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
 
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ["username"]
 
     def __str__(self):
         return self.email
-    
+
     class Meta:
-        db_table = 'users'
+        db_table = "users"

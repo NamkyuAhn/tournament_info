@@ -1,7 +1,6 @@
 from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-import json
 from rest_framework.exceptions import ValidationError
 
 from tournaments.models import (
@@ -14,38 +13,49 @@ from tournaments.models import (
 
 User = get_user_model()
 
+
+def _get_owned_entry_for_update(owner, entry_id):
+    """Keep the entry-before-tournament lock order inside the caller's transaction."""
+    entry = TournamentEntry.objects.select_for_update().get(id=entry_id)
+    tournament = Tournament.objects.select_for_update().get(id=entry.tournament_id)
+    if tournament.shop.owner != owner:
+        raise ValidationError("Not your tournament.")
+    return entry, tournament
+
+
+def _validate_pending_entry(entry):
+    if entry.approval_status != "PENDING":
+        raise ValidationError("Entry already processed.")
+
+
+def _get_latest_buyin(entry):
+    latest_buyin = (
+        BuyInEvent.objects.filter(entry=entry).order_by("-created_at").first()
+    )
+    if latest_buyin is None:
+        raise ValidationError("Buy-in event not found.")
+    return latest_buyin
+
+
 def create_tournament(*, shop, validated_data, images):
 
-    poker_data = validated_data.pop(
-        "poker_tournament",
-        None
-    )
+    poker_data = validated_data.pop("poker_tournament", None)
 
     with transaction.atomic():
 
-        tournament = Tournament.objects.create(
-            shop=shop,
-            **validated_data
-        )
+        tournament = Tournament.objects.create(shop=shop, **validated_data)
 
         if tournament.game_type == Tournament.GameTypeChoices.POKER:
 
             if poker_data is None:
-                raise ValidationError(
-                    "Poker tournament data is required."
-                )
+                raise ValidationError("Poker tournament data is required.")
 
-            PokerTournament.objects.create(
-                tournament=tournament,
-                **poker_data
-            )
+            PokerTournament.objects.create(tournament=tournament, **poker_data)
 
         for index, image in enumerate(images):
 
             TournamentImage.objects.create(
-                tournament=tournament,
-                image=image,
-                is_primary=(index == 0)
+                tournament=tournament, image=image, is_primary=(index == 0)
             )
 
     return tournament
@@ -58,236 +68,130 @@ def update_tournament(
     existing_image_ids=None,
 ):
 
-    poker_data = validated_data.pop(
-        "poker_tournament",
-        None
-    )
+    poker_data = validated_data.pop("poker_tournament", None)
 
     with transaction.atomic():
 
         for attr, value in validated_data.items():
 
-            setattr(
-                tournament,
-                attr,
-                value
-            )
+            setattr(tournament, attr, value)
 
         tournament.save()
 
         if existing_image_ids is not None:
 
-            existing_image_ids = [
-                int(image_id)
-                for image_id in existing_image_ids
-            ]
+            existing_image_ids = [int(image_id) for image_id in existing_image_ids]
 
-            existing_images = (
-                TournamentImage.objects.filter(
-                    tournament=tournament,
-                    id__in=existing_image_ids
-                )
+            existing_images = TournamentImage.objects.filter(
+                tournament=tournament, id__in=existing_image_ids
             )
 
-            TournamentImage.objects.filter(
-                tournament=tournament
-            ).exclude(
+            TournamentImage.objects.filter(tournament=tournament).exclude(
                 id__in=existing_image_ids
             ).delete()
 
-
             if images:
 
-                has_primary = existing_images.filter(
-                    is_primary=True
-                ).exists()
-
+                has_primary = existing_images.filter(is_primary=True).exists()
 
                 for image in images:
 
                     TournamentImage.objects.create(
-                        tournament=tournament,
-                        image=image,
-                        is_primary=not has_primary
+                        tournament=tournament, image=image, is_primary=not has_primary
                     )
 
                     has_primary = True
 
             if not TournamentImage.objects.filter(
-                tournament=tournament,
-                is_primary=True
+                tournament=tournament, is_primary=True
             ).exists():
 
-                first_image = TournamentImage.objects.filter(
-                    tournament=tournament
-                ).order_by("id").first()
+                first_image = (
+                    TournamentImage.objects.filter(tournament=tournament)
+                    .order_by("id")
+                    .first()
+                )
 
                 if first_image:
 
                     first_image.is_primary = True
-                    first_image.save(
-                        update_fields=["is_primary"]
-                    )
-
+                    first_image.save(update_fields=["is_primary"])
 
         if poker_data is not None:
 
-            if tournament.game_type != (
-                Tournament.GameTypeChoices.POKER
-            ):
+            if tournament.game_type != (Tournament.GameTypeChoices.POKER):
 
                 raise ValidationError(
                     "Poker tournament data is only available for poker tournaments."
                 )
 
-            poker_tournament = (
-                tournament.poker_tournament
-            )
+            poker_tournament = tournament.poker_tournament
 
             for attr, value in poker_data.items():
 
-                setattr(
-                    poker_tournament,
-                    attr,
-                    value
-                )
+                setattr(poker_tournament, attr, value)
 
             poker_tournament.save()
 
-
     return tournament
+
 
 class TournamentPlayerManageService:
 
     @staticmethod
     @transaction.atomic
-    def approve_entry(
-        owner,
-        entry_id,
-        table_number=None,
-        seat_number=None
-    ):
+    def approve_entry(owner, entry_id, table_number=None, seat_number=None):
 
-        entry = (
-            TournamentEntry.objects
-            .select_for_update()
-            .get(id=entry_id)
-        )
+        entry, tournament = _get_owned_entry_for_update(owner, entry_id)
 
-        tournament = (
-            Tournament.objects
-            .select_for_update()
-            .get(id=entry.tournament_id)
-        )
-
-        if tournament.shop.owner != owner:
-            raise ValidationError(
-                "Not your tournament."
-            )
-
-        if entry.approval_status != "PENDING":
-            raise ValidationError(
-                "Entry already processed."
-            )
+        _validate_pending_entry(entry)
 
         table_number = table_number or 0
         seat_number = seat_number or 0
 
-        if tournament.game_type == (
-            Tournament.GameTypeChoices.POKER
-        ):
+        if tournament.game_type == (Tournament.GameTypeChoices.POKER):
 
-            poker_tournament = (
-                PokerTournament.objects
-                .select_for_update()
-                .get(tournament=tournament)
+            poker_tournament = PokerTournament.objects.select_for_update().get(
+                tournament=tournament
             )
 
-            latest_buyin = (
-                BuyInEvent.objects
-                .filter(entry=entry)
-                .order_by("-created_at")
-                .first()
-            )
+            latest_buyin = _get_latest_buyin(entry)
 
-            if latest_buyin is None:
-                raise ValidationError(
-                    "Buy-in event not found."
-                )
+            if latest_buyin.type == (BuyInEvent.TypeChoices.ENTRY):
 
-            if latest_buyin.type == (
-                BuyInEvent.TypeChoices.ENTRY
-            ):
-
-                if (
-                    poker_tournament.total_entries_cache
-                    >= poker_tournament.max_entries
-                ):
-                    raise ValidationError(
-                        "Tournament full."
-                    )
+                if poker_tournament.total_entries_cache >= poker_tournament.max_entries:
+                    raise ValidationError("Tournament full.")
 
                 poker_tournament.total_entries_cache += 1
 
-                poker_tournament.save(
-                    update_fields=[
-                        "total_entries_cache"
-                    ]
-                )
+                poker_tournament.save(update_fields=["total_entries_cache"])
 
-            elif latest_buyin.type == (
-                BuyInEvent.TypeChoices.REENTRY
-            ):
+            elif latest_buyin.type == (BuyInEvent.TypeChoices.REENTRY):
 
                 poker_tournament.total_reentries_cache += 1
 
-                poker_tournament.save(
-                    update_fields=[
-                        "total_reentries_cache"
-                    ]
-                )
+                poker_tournament.save(update_fields=["total_reentries_cache"])
 
-            elif latest_buyin.type == (
-                BuyInEvent.TypeChoices.ADDON
-            ):
+            elif latest_buyin.type == (BuyInEvent.TypeChoices.ADDON):
 
                 poker_tournament.total_addons_cache += 1
 
-                poker_tournament.save(
-                    update_fields=[
-                        "total_addons_cache"
-                    ]
-                )
+                poker_tournament.save(update_fields=["total_addons_cache"])
 
-            if latest_buyin.type != (
-                BuyInEvent.TypeChoices.ADDON
-            ):
+            if latest_buyin.type != (BuyInEvent.TypeChoices.ADDON):
 
                 tournament.live_players_cache += 1
 
-                tournament.save(
-                    update_fields=[
-                        "live_players_cache"
-                    ]
-                )
+                tournament.save(update_fields=["live_players_cache"])
 
         else:
 
-            if (
-                tournament.live_players_cache
-                >= tournament.max_participants
-            ):
-                raise ValidationError(
-                    "Tournament full."
-                )
+            if tournament.live_players_cache >= tournament.max_participants:
+                raise ValidationError("Tournament full.")
 
             tournament.live_players_cache += 1
 
-            tournament.save(
-                update_fields=[
-                    "live_players_cache"
-                ]
-            )
+            tournament.save(update_fields=["live_players_cache"])
 
         entry.approval_status = "APPROVED"
 
@@ -315,48 +219,13 @@ class TournamentPlayerManageService:
     @transaction.atomic
     def reject_entry(owner, entry_id):
 
-        entry = (
-            TournamentEntry.objects
-            .select_for_update()
-            .get(id=entry_id)
-        )
+        entry, tournament = _get_owned_entry_for_update(owner, entry_id)
 
-        tournament = (
-            Tournament.objects
-            .select_for_update()
-            .get(id=entry.tournament_id)
-        )
+        _validate_pending_entry(entry)
 
-        if tournament.shop.owner != owner:
+        latest_buyin = _get_latest_buyin(entry)
 
-            raise ValidationError(
-                "Not your tournament."
-            )
-
-        if entry.approval_status != "PENDING":
-
-            raise ValidationError(
-                "Entry already processed."
-            )
-
-        latest_buyin = (
-            BuyInEvent.objects
-            .filter(entry=entry)
-            .order_by("-created_at")
-            .first()
-        )
-
-        if latest_buyin is None:
-
-            raise ValidationError(
-                "Buy-in event not found."
-            )
-
-        player = (
-            User.objects
-            .select_for_update()
-            .get(id=entry.player_id)
-        )
+        player = User.objects.select_for_update().get(id=entry.player_id)
 
         player.money += latest_buyin.amount
 
@@ -364,44 +233,30 @@ class TournamentPlayerManageService:
         latest_buyin.refunded_at = timezone.now()
 
         latest_buyin.save(
-        update_fields=[
-            "refunded",
-            "refunded_at",
-        ]
-)
-        player.save(
             update_fields=[
-                "money"
+                "refunded",
+                "refunded_at",
             ]
         )
+        player.save(update_fields=["money"])
 
-        if latest_buyin.type == (
-            BuyInEvent.TypeChoices.ENTRY
-        ):
+        if latest_buyin.type == (BuyInEvent.TypeChoices.ENTRY):
 
             if entry.total_entries_cache > 0:
 
                 entry.total_entries_cache -= 1
 
-            entry.status = (
-                TournamentEntry.StatusChoices.CANCELED
-            )
+            entry.status = TournamentEntry.StatusChoices.CANCELED
 
-        elif latest_buyin.type == (
-            BuyInEvent.TypeChoices.REENTRY
-        ):
+        elif latest_buyin.type == (BuyInEvent.TypeChoices.REENTRY):
 
             if entry.total_reentries_cache > 0:
 
                 entry.total_reentries_cache -= 1
 
-            entry.status = (
-                TournamentEntry.StatusChoices.BUSTED
-            )
+            entry.status = TournamentEntry.StatusChoices.BUSTED
 
-        elif latest_buyin.type == (
-            BuyInEvent.TypeChoices.ADDON
-        ):
+        elif latest_buyin.type == (BuyInEvent.TypeChoices.ADDON):
 
             if entry.total_addons_cache > 0:
 
@@ -425,54 +280,23 @@ class TournamentPlayerManageService:
     @transaction.atomic
     def bust_player(owner, entry_id):
 
-        entry = (
-            TournamentEntry.objects
-            .select_for_update()
-            .get(id=entry_id)
-        )
+        entry, tournament = _get_owned_entry_for_update(owner, entry_id)
 
-        tournament = (
-            Tournament.objects
-            .select_for_update()
-            .get(id=entry.tournament_id)
-        )
+        if entry.status != (TournamentEntry.StatusChoices.REGISTERED):
 
-        if tournament.shop.owner != owner:
+            raise ValidationError("Player not active.")
 
-            raise ValidationError(
-                "Not your tournament."
-            )
-
-        if entry.status != (
-            TournamentEntry.StatusChoices.REGISTERED
-        ):
-
-            raise ValidationError(
-                "Player not active."
-            )
-
-        entry.status = (
-            TournamentEntry.StatusChoices.BUSTED
-        )
+        entry.status = TournamentEntry.StatusChoices.BUSTED
 
         entry.busted_at = timezone.now()
 
-        entry.save(
-            update_fields=[
-                "status",
-                "busted_at"
-            ]
-        )
+        entry.save(update_fields=["status", "busted_at"])
 
         if tournament.live_players_cache > 0:
 
             tournament.live_players_cache -= 1
 
-            tournament.save(
-                update_fields=[
-                    "live_players_cache"
-                ]
-            )
+            tournament.save(update_fields=["live_players_cache"])
 
         return entry
 
@@ -481,74 +305,44 @@ class TournamentPlayerManageService:
     def cancel_tournament(owner, tournament_id):
 
         tournament = (
-            Tournament.objects
-            .select_for_update()
+            Tournament.objects.select_for_update()
             .select_related("shop")
             .get(id=tournament_id)
         )
 
         if tournament.shop.owner != owner:
 
-            raise ValidationError(
-                "Not your tournament."
-            )
+            raise ValidationError("Not your tournament.")
 
-        if tournament.status == (
-            Tournament.StatusChoices.FINISHED
-        ):
+        if tournament.status == (Tournament.StatusChoices.FINISHED):
 
-            raise ValidationError(
-                "Finished tournament cannot be canceled."
-            )
+            raise ValidationError("Finished tournament cannot be canceled.")
 
-        if tournament.status == (
-            Tournament.StatusChoices.CANCELED
-        ):
+        if tournament.status == (Tournament.StatusChoices.CANCELED):
 
-            raise ValidationError(
-                "Tournament is already canceled."
-            )
+            raise ValidationError("Tournament is already canceled.")
 
-        entries = (
-            TournamentEntry.objects
-            .select_for_update()
-            .filter(
-                tournament=tournament
-            )
+        entries = TournamentEntry.objects.select_for_update().filter(
+            tournament=tournament
         )
 
         for entry in entries:
 
-            player = (
-                User.objects
-                .select_for_update()
-                .get(
-                    id=entry.player_id
-                )
-            )
+            player = User.objects.select_for_update().get(id=entry.player_id)
 
-            buyin_events = (
-                BuyInEvent.objects
-                .select_for_update()
-                .filter(
-                    entry=entry,
-                    refunded=False
-                )
+            buyin_events = BuyInEvent.objects.select_for_update().filter(
+                entry=entry, refunded=False
             )
 
             refund_amount = 0
 
             for buyin_event in buyin_events:
 
-                refund_amount += (
-                    buyin_event.amount
-                )
+                refund_amount += buyin_event.amount
 
                 buyin_event.refunded = True
 
-                buyin_event.refunded_at = (
-                    timezone.now()
-                )
+                buyin_event.refunded_at = timezone.now()
 
                 buyin_event.save(
                     update_fields=[
@@ -561,31 +355,17 @@ class TournamentPlayerManageService:
 
                 player.money += refund_amount
 
-                player.save(
-                    update_fields=[
-                        "money"
-                    ]
-                )
+                player.save(update_fields=["money"])
 
-            if entry.status != (
-                TournamentEntry.StatusChoices.CANCELED
-            ):
+            if entry.status != (TournamentEntry.StatusChoices.CANCELED):
 
-                entry.status = (
-                    TournamentEntry.StatusChoices.CANCELED
-                )
+                entry.status = TournamentEntry.StatusChoices.CANCELED
 
-                entry.save(
-                    update_fields=[
-                        "status"
-                    ]
-                )
+                entry.save(update_fields=["status"])
 
         tournament.live_players_cache = 0
 
-        tournament.status = (
-            Tournament.StatusChoices.CANCELED
-        )
+        tournament.status = Tournament.StatusChoices.CANCELED
 
         tournament.canceled_at = timezone.now()
 
@@ -597,16 +377,10 @@ class TournamentPlayerManageService:
             ]
         )
 
-        if tournament.game_type == (
-            Tournament.GameTypeChoices.POKER
-        ):
+        if tournament.game_type == (Tournament.GameTypeChoices.POKER):
 
-            poker_tournament = (
-                PokerTournament.objects
-                .select_for_update()
-                .get(
-                    tournament=tournament
-                )
+            poker_tournament = PokerTournament.objects.select_for_update().get(
+                tournament=tournament
             )
 
             poker_tournament.total_entries_cache = 0

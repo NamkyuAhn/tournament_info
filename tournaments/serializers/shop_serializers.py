@@ -8,12 +8,12 @@ from tournaments.models import (
 )
 
 from .serializers import PokerTournamentSerializer
+from .validators import validate_registration_schedule
+
 
 class TournamentCreateSerializer(serializers.ModelSerializer):
 
-    poker_tournament = PokerTournamentSerializer(
-        required=False
-    )
+    poker_tournament = PokerTournamentSerializer(required=False)
 
     class Meta:
         model = Tournament
@@ -34,35 +34,21 @@ class TournamentCreateSerializer(serializers.ModelSerializer):
         registration_deadline = data["registration_deadline"]
         start_time = data["start_time"]
 
-        if registration_deadline < start_time:
-            raise serializers.ValidationError(
-                "Registration deadline must be equal to or after start time."
-            )
+        validate_registration_schedule(start_time, registration_deadline)
 
         if start_time < timezone.now():
-            raise serializers.ValidationError(
-                "Start time must be in the future."
-            )
+            raise serializers.ValidationError("Start time must be in the future.")
 
-        game_type = data.get(
-            "game_type",
-            Tournament.GameTypeChoices.POKER
-        )
+        game_type = data.get("game_type", Tournament.GameTypeChoices.POKER)
 
         poker_data = data.get("poker_tournament")
 
-        if (
-            game_type == Tournament.GameTypeChoices.POKER
-            and not poker_data
-        ):
+        if game_type == Tournament.GameTypeChoices.POKER and not poker_data:
             raise serializers.ValidationError(
                 "Poker tournament settings are required for poker tournaments."
             )
 
-        if (
-            game_type != Tournament.GameTypeChoices.POKER
-            and poker_data
-        ):
+        if game_type != Tournament.GameTypeChoices.POKER and poker_data:
             raise serializers.ValidationError(
                 "Poker tournament settings are only allowed for poker tournaments."
             )
@@ -72,10 +58,8 @@ class TournamentCreateSerializer(serializers.ModelSerializer):
 
 class TournamentEditSerializer(serializers.ModelSerializer):
 
-    poker_tournament = PokerTournamentSerializer(
-        required=False
-    )
-        
+    poker_tournament = PokerTournamentSerializer(required=False)
+
     class Meta:
         model = Tournament
         fields = [
@@ -92,43 +76,27 @@ class TournamentEditSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        print("TOURNAMENT VALIDATE:", data)
-        start_time = data.get(
-            "start_time",
-            self.instance.start_time
-        )
+        start_time = data.get("start_time", self.instance.start_time)
 
         registration_deadline = data.get(
-            "registration_deadline",
-            self.instance.registration_deadline
+            "registration_deadline", self.instance.registration_deadline
         )
 
-        if registration_deadline < start_time:
-            raise serializers.ValidationError(
-                "Registration deadline must be equal to or after start time."
-            )
+        validate_registration_schedule(start_time, registration_deadline)
 
         return data
-    
+
+
 class EntryApproveSerializer(serializers.Serializer):
 
-    table_number = serializers.IntegerField(
-        required=False,
-        default=0
-    )
+    table_number = serializers.IntegerField(required=False, default=0)
 
-    seat_number = serializers.IntegerField(
-        required=False,
-        default=0
-    )
+    seat_number = serializers.IntegerField(required=False, default=0)
 
 
 class TournamentEntrySerializer(serializers.ModelSerializer):
 
-    player_email = serializers.CharField(
-        source="player.email",
-        read_only=True
-    )
+    player_email = serializers.CharField(source="player.email", read_only=True)
 
     buy_in_type = serializers.SerializerMethodField()
 
@@ -151,16 +119,13 @@ class TournamentEntrySerializer(serializers.ModelSerializer):
 
     def get_buy_in_type(self, obj):
 
-        latest_event = (
-            obj.buyin_events
-            .order_by("-created_at")
-            .first()
-        )
+        latest_event = obj.buyin_events.order_by("-created_at").first()
 
         if latest_event:
             return latest_event.type
 
         return None
+
 
 class PokerTournamentShopSerializer(serializers.ModelSerializer):
 
@@ -201,9 +166,7 @@ class ShopTournamentListSerializer(serializers.ModelSerializer):
 
 class ShopTournamentDetailSerializer(serializers.ModelSerializer):
 
-    poker_tournament = PokerTournamentShopSerializer(
-        read_only=True
-    )
+    poker_tournament = PokerTournamentShopSerializer(read_only=True)
 
     class Meta:
         model = Tournament
