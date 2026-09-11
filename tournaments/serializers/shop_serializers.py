@@ -75,6 +75,13 @@ class TournamentEditSerializer(serializers.ModelSerializer):
             "poker_tournament",
         ]
 
+    def validate_status(self, value):
+        if value == Tournament.StatusChoices.CANCELED:
+            raise serializers.ValidationError(
+                "CANCELED status can only be set through the cancel API."
+            )
+        return value
+
     def validate(self, data):
         start_time = data.get("start_time", self.instance.start_time)
 
