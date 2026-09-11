@@ -183,6 +183,9 @@ class TournamentBuyInService:
 
             raise ValidationError("Addon allowed only for active players.")
 
+        if entry.approval_status == "PENDING":
+            raise ValidationError("Wait for approval before requesting another addon.")
+
         if entry.total_addons_cache >= poker_tournament.max_addons:
 
             raise ValidationError("Addon limit reached.")
